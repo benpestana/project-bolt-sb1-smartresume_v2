@@ -8,71 +8,58 @@ import Button from '../ui/Button';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeView, setActiveView] = useState<'dashboard' | 'new' | 'edit'>('dashboard');
-  const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
-  const [savedResumes, setSavedResumes] = useState<{ id: string; name: string; updated: string }[]>([]);
-  
-  // Fetch saved resumes from localStorage
+  // Use resumeData and loading from ResumeContext
+  const { resumeData, loading, loadResume, createResume } = useResume();
+  // Determine initial view based on whether resumeData is already loaded
+  const [activeView, setActiveView] = useState<'dashboard' | 'new' | 'edit'>(
+    resumeData ? 'edit' : 'dashboard'
+  );
+
+  // Load resume when user logs in or component mounts
   useEffect(() => {
-    if (!user) return;
-    
-    const resumes: { id: string; name: string; updated: string }[] = [];
-    
-    // Scan localStorage for resume data
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      
-      if (key && key.startsWith('resume-')) {
-        try {
-          const resumeData = JSON.parse(localStorage.getItem(key) || '');
-          
-          if (resumeData.userId === user.id) {
-            resumes.push({
-              id: resumeData.id,
-              name: resumeData.contact.fullName || 'Untitled Resume',
-              updated: resumeData.lastUpdated,
-            });
-          }
-        } catch (error) {
-          console.error('Error parsing resume data:', error);
-        }
-      }
+    if (user?.email && !resumeData) { // Only load if user exists and no resumeData is loaded yet
+      loadResume();
     }
-    
-    // Sort by last updated
-    resumes.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
-    setSavedResumes(resumes);
-  }, [user]);
-  
-  // Template selection completed
-  const handleTemplateSelectionComplete = (resumeId: string) => {
-    setActiveResumeId(resumeId);
-    setActiveView('edit');
+  }, [user, loadResume, resumeData]); // Depend on user, loadResume, and resumeData
+
+  // Template selection completed - create a new resume locally and switch to edit
+  const handleTemplateSelectionComplete = async (templateId: string) => {
+     // createResume is now handled in ResumeContext and sets resumeData
+     // The useEffect above will handle loading if needed, but createResume sets data directly
+     await createResume(templateId);
+     setActiveView('edit'); // Switch to edit view after creating
   };
-  
-  // Start editing an existing resume
-  const handleEditResume = (resumeId: string) => {
-    setActiveResumeId(resumeId);
-    setActiveView('edit');
+
+  // Start editing the loaded resume
+  const handleEditResume = () => {
+    // If resumeData exists, switch to edit view
+    if (resumeData) {
+      setActiveView('edit');
+    }
   };
-  
+
   // Handle logout
   const handleLogout = async () => {
     try {
       await logout();
+      // Optionally clear resume data or navigate to login page
+      // setResumeData(null); // This might be handled by AuthContext effect in ResumeContext
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
-  
+
   // Render active view
   const renderActiveView = () => {
     switch (activeView) {
       case 'new':
+        // Pass the createResume function from context to TemplateSelection
         return <TemplateSelection onComplete={handleTemplateSelectionComplete} />;
       case 'edit':
-        return activeResumeId ? <ResumeBuilder resumeId={activeResumeId} /> : null;
-      default:
+        // Pass the resumeData from context to ResumeBuilder
+        // resumeId prop might still be needed by ResumeBuilder, pass resumeData.id
+        return resumeData ? <ResumeBuilder resumeId={resumeData.id} /> : null;
+      default: // 'dashboard' view
         return (
           <div className="max-w-6xl mx-auto px-4 py-8">
             <div className="bg-white shadow-sm rounded-lg p-6">
@@ -81,49 +68,41 @@ const Dashboard: React.FC = () => {
                   <h1 className="text-2xl font-bold text-gray-900">My Resumes</h1>
                   <p className="text-gray-600">Create and manage your professional resumes</p>
                 </div>
+                {/* Create New Resume button */}
                 <Button
                   variant="primary"
                   onClick={() => setActiveView('new')}
                   icon={<Plus className="h-5 w-5" />}
+                  disabled={loading} // Disable while loading
                 >
                   Create New Resume
                 </Button>
               </div>
-              
-              {savedResumes.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <h2 className="text-lg font-medium text-gray-900 mb-1">No resumes yet</h2>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Create your first resume to get started on your job search
-                  </p>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setActiveView('new')}
-                    icon={<Plus className="h-4 w-4" />}
-                  >
-                    Create New Resume
-                  </Button>
-                </div>
+
+              {loading ? (
+                 <div className="flex justify-center items-center h-64">
+                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {savedResumes.map((resume) => (
+                // Display the single loaded resume or the "no resumes" message
+                resumeData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Display the single resume */}
                     <div
-                      key={resume.id}
+                      key={resumeData.id}
                       className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                     >
                       <div className="p-4">
-                        <h3 className="font-medium text-lg">{resume.name}</h3>
+                        <h3 className="font-medium text-lg">{resumeData.contact.fullName || 'Untitled Resume'}</h3>
                         <p className="text-sm text-gray-500">
-                          Last updated: {new Date(resume.updated).toLocaleDateString()}
+                          Last updated: {new Date(resumeData.lastUpdated).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="bg-white p-3 border-t border-gray-200">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditResume(resume.id)}
+                          onClick={handleEditResume} // Edit the loaded resume
                           icon={<Pencil className="h-4 w-4" />}
                           fullWidth
                         >
@@ -131,15 +110,32 @@ const Dashboard: React.FC = () => {
                         </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  // No resumes found
+                  <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <h2 className="text-lg font-medium text-gray-900 mb-1">No resumes yet</h2>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Create your first resume to get started on your job search
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setActiveView('new')}
+                      icon={<Plus className="h-4 w-4" />}
+                    >
+                      Create New Resume
+                    </Button>
+                  </div>
+                )
               )}
             </div>
           </div>
         );
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -152,7 +148,7 @@ const Dashboard: React.FC = () => {
                 Smart Resume Builder
               </span>
             </div>
-            
+
             <div className="flex items-center">
               {activeView !== 'dashboard' && (
                 <Button
@@ -164,7 +160,7 @@ const Dashboard: React.FC = () => {
                   Back to Dashboard
                 </Button>
               )}
-              
+
               <div className="flex items-center">
                 <span className="text-sm text-gray-700 mr-3">
                   {user?.name || user?.email}
@@ -182,7 +178,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </header>
-      
+
       {/* Main Content */}
       <main>
         {renderActiveView()}

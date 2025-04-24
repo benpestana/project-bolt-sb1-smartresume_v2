@@ -17,8 +17,12 @@ const ResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
   
   // Handle manual save
   const handleSave = async () => {
+    if (!resumeData) {
+      console.error("Cannot save: No resume data available.");
+      return;
+    }
     try {
-      await saveResume();
+      await saveResume(resumeData);
     } catch (error) {
       console.error('Error saving resume:', error);
     }
@@ -54,16 +58,6 @@ const ResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
-            isLoading={loading}
-            icon={<Save className="h-4 w-4" />}
-          >
-            Save
-          </Button>
-          
           <div className="relative group">
             <Button
               variant="primary"
@@ -111,7 +105,7 @@ const ResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
         )}
         
         <div className={`w-full ${previewMode ? 'w-full' : 'md:w-1/2'} bg-gray-100 overflow-y-auto`}>
-          <ResumePreview />
+          <ResumePreview key={resumeData?.lastUpdated} />
         </div>
       </div>
     </div>

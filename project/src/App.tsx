@@ -11,9 +11,13 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     const fetchMessage = async () => {
-      const response = await fetch('http://127.0.0.1:8000/api/message');
-      const data = await response.json();
-      setMessage(data.message);
+      try {
+        const response = await fetch('http://localhost:8000/api/message');
+        const data = await response.json();
+        setMessage(data.message);
+      } catch (error) {
+        setMessage('Failed to fetch message from backend. Please ensure the backend server is running.');
+      }
     };
 
     fetchMessage();

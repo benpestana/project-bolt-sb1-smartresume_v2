@@ -16,21 +16,26 @@ const API_BASE_URL = 'http://localhost:8000';
 
 // Function to call the backend login endpoint
 const apiLogin = async (email: string, password: string): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/login/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-   if (!response.ok) {
-    try {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Login failed');
-    } catch (error) {
-      throw new Error('Login failed');
+    if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed');
+      } catch (error) {
+        throw new Error('Login failed');
+      }
     }
+  } catch (error: any) {
+    throw new Error('Network error: Could not connect to the server.');
   }
 
   // Backend currently only returns a message.

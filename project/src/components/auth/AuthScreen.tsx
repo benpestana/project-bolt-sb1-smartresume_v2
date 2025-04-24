@@ -10,17 +10,29 @@ interface AuthScreenProps {
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const { login, signup } = useAuth();
+  const { login, signup, loading } = useAuth();
   const { API_BASE_URL } = useContext(AuthContext);
 
   const handleAuth = async (email: string, password: string, name: string, isSignup: boolean) => {
     try {
       if (isSignup) {
         await signup(email, password, name);
-        onLoginSuccess();
+        // Wait for loading to be false before calling onLoginSuccess
+        const intervalId = setInterval(() => {
+          if (!loading) {
+            clearInterval(intervalId);
+            onLoginSuccess();
+          }
+        }, 50); // Check every 50ms
       } else {
         await login(email, password);
-        onLoginSuccess();
+         // Wait for loading to be false before calling onLoginSuccess
+        const intervalId = setInterval(() => {
+          if (!loading) {
+            clearInterval(intervalId);
+            onLoginSuccess();
+          }
+        }, 50); // Check every 50ms
       }
     } catch (error: any) {
       console.error(error);

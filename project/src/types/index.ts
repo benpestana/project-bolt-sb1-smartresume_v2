@@ -93,8 +93,8 @@ export interface AuthContextType {
 export interface ResumeContextType {
   resumeData: ResumeData | null;
   loading: boolean;
-  setResumeData: (data: ResumeData) => void;
-  saveResume: () => Promise<void>;
+  setResumeData: (data: ResumeData | null) => void; // Allow setting null
+  saveResume: (dataToSave: ResumeData) => Promise<void>;
   loadResume: (id: string) => Promise<void>;
   createResume: (templateId: string) => Promise<string>;
   updateSection: <T>(sectionName: string, data: T) => void;

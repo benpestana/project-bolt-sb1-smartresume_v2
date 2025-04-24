@@ -42,8 +42,8 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useAuth();
 
   // Save resume to backend
-  const saveResume = async () => {
-    if (!resumeData || !user?.email) {
+  const saveResume = async (dataToSave: ResumeData) => {
+    if (!dataToSave || !user?.email) {
       console.error("Cannot save resume: No resume data or user not logged in.");
       return;
     }
@@ -52,7 +52,7 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       // Update timestamp before saving
       const updatedResumeData = {
-        ...resumeData,
+        ...dataToSave,
         lastUpdated: new Date().toISOString(),
       };
 
@@ -111,9 +111,10 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error(errorData.detail || 'Failed to load resume');
       }
 
-      const loadedData = await response.json(); 
-      // Backend returns the 'data' field which contains our ResumeData object
-      setResumeData(loadedData as ResumeData); 
+      const loadedData = await response.json();
+      console.log('Loaded data from backend:', loadedData); // Log the loaded data
+      // Backend returns the ResumeData object directly for this endpoint
+      setResumeData(loadedData as ResumeData);
       console.log('Resume loaded successfully from backend.');
 
     } catch (error) {
@@ -176,10 +177,6 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       lastUpdated: new Date().toISOString(),
     });
     
-    // Auto-save after a delay (implement debounce in production)
-    setTimeout(() => {
-      saveResume();
-    }, 2000);
   };
 
   // Export resume to PDF or DOCX
