@@ -86,6 +86,7 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  API_BASE_URL: string;
 }
 
 // Resume context types

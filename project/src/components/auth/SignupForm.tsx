@@ -5,7 +5,7 @@ import { Mail, Lock, User } from 'lucide-react';
 
 interface SignupFormProps {
   onToggleForm: () => void;
-  onAuth: (email: string, password: string, isSignup: boolean) => Promise<void>;
+  onAuth: (email: string, password: string, name: string, isSignup: boolean) => Promise<void>;
 }
 
 const SignupForm: React.FC<SignupFormProps> = ({ onToggleForm, onAuth }) => {
@@ -64,7 +64,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleForm, onAuth }) => {
       return;
     }
 
-    onAuth(email, password, true);
+    onAuth(email, password, name, true);
   };
   
   return (

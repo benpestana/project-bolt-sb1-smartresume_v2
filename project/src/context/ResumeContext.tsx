@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ResumeData, ResumeContextType } from '../types';
 import { useAuth } from './AuthContext';
+
+// Backend API base URL (reuse or define if not globally available)
+const API_BASE_URL = 'http://localhost:8000'; 
 
 // Initial empty resume data
 const createEmptyResume = (userId: string, templateId: string): ResumeData => {
@@ -26,7 +29,7 @@ const ResumeContext = createContext<ResumeContextType>({
   loading: false,
   setResumeData: () => {},
   saveResume: async () => {},
-  loadResume: async () => {},
+  loadResume: async () => {}, // Adjusted signature: no ID needed
   createResume: async () => '',
   updateSection: () => {},
   exportResume: async () => {},
@@ -38,70 +41,125 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  // Save resume to localStorage and eventually to backend
+  // Save resume to backend
   const saveResume = async () => {
-    if (!resumeData) return;
+    if (!resumeData || !user?.email) {
+      console.error("Cannot save resume: No resume data or user not logged in.");
+      return;
+    }
     
     setLoading(true);
     try {
-      // Update timestamp
-      const updatedResume = {
+      // Update timestamp before saving
+      const updatedResumeData = {
         ...resumeData,
         lastUpdated: new Date().toISOString(),
       };
-      
-      // Save to localStorage for now
-      localStorage.setItem(`resume-${updatedResume.id}`, JSON.stringify(updatedResume));
-      setResumeData(updatedResume);
-      
-      // In a real app, this would also save to a backend
-    } catch (error) {
-      console.error('Error saving resume:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // Load resume from localStorage and eventually from backend
-  const loadResume = async (id: string) => {
-    setLoading(true);
-    try {
-      // Get from localStorage for now
-      const storedResume = localStorage.getItem(`resume-${id}`);
-      
-      if (storedResume) {
-        setResumeData(JSON.parse(storedResume));
-      } else {
-        throw new Error('Resume not found');
+      const payload = {
+        email: user.email,
+        template: updatedResumeData.templateId, // Use templateId for the 'template' field
+        data: updatedResumeData, // Send the entire frontend resume object as 'data'
+      };
+
+      const response = await fetch(`${API_BASE_URL}/resume/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to save resume');
       }
       
-      // In a real app, this would fetch from a backend
+      // Update local state with the timestamped version
+      setResumeData(updatedResumeData); 
+      console.log('Resume saved successfully to backend.');
+
     } catch (error) {
-      console.error('Error loading resume:', error);
+      console.error('Error saving resume to backend:', error);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Create a new resume with a template
-  const createResume = async (templateId: string): Promise<string> => {
-    if (!user) throw new Error('User must be logged in');
-    
+  // Load resume from backend based on logged-in user's email
+  const loadResume = async () => {
+    if (!user?.email) {
+      // Don't attempt to load if user isn't logged in or email is missing
+      // console.log("User not logged in, cannot load resume.");
+      setResumeData(null); // Clear any existing resume data
+      return; 
+    }
+
     setLoading(true);
     try {
-      // Create empty resume with template
-      const newResume = createEmptyResume(user.id, templateId);
+      const response = await fetch(`${API_BASE_URL}/resume/${user.email}`);
+
+      if (response.status === 404) {
+        console.log('No resume found for this user on the backend.');
+        setResumeData(null); // No resume exists for the user
+        return; // Exit function gracefully
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to load resume');
+      }
+
+      const loadedData = await response.json(); 
+      // Backend returns the 'data' field which contains our ResumeData object
+      setResumeData(loadedData as ResumeData); 
+      console.log('Resume loaded successfully from backend.');
+
+    } catch (error) {
+      console.error('Error loading resume from backend:', error);
+      setResumeData(null); // Clear resume data on error
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Effect to load resume when user logs in
+  useEffect(() => {
+    if (user?.email) {
+      loadResume();
+    } else {
+      setResumeData(null); // Clear resume data if user logs out
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Reload when user object changes (login/logout)
+
+
+  // Create a new resume (locally first)
+  const createResume = async (templateId: string): Promise<string> => {
+    // Use user.email if available, otherwise maybe a placeholder?
+    // Backend requires email on save, but user.id might not be available yet from AuthContext
+    // Using user.email seems safer if available. User ID from AuthContext is currently empty string.
+    const userIdForResume = user?.email || 'unknown-user'; 
+    if (!user) throw new Error('User must be logged in to create a resume');
+
+    setLoading(true);
+    try {
+      // Create empty resume locally
+      const newResume = createEmptyResume(userIdForResume, templateId); 
       
-      // Save to localStorage for now
-      localStorage.setItem(`resume-${newResume.id}`, JSON.stringify(newResume));
+      // Set local state immediately
       setResumeData(newResume);
       
-      // In a real app, this would also save to a backend
-      return newResume.id;
+      // NOTE: We are NOT saving to backend here. 
+      // The first save will happen via saveResume() triggered by updateSection or manual save.
+      // We also don't save to localStorage anymore.
+      
+      console.log('New resume created locally:', newResume.id);
+      return newResume.id; 
     } catch (error) {
-      console.error('Error creating resume:', error);
+      console.error('Error creating new resume:', error);
       throw error;
     } finally {
       setLoading(false);

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import { FileText } from 'lucide-react';
+import { useAuth, AuthContext } from '../../context/AuthContext';
 
 interface AuthScreenProps {
   onLoginSuccess: () => void;
@@ -9,29 +10,21 @@ interface AuthScreenProps {
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const { login, signup } = useAuth();
+  const { API_BASE_URL } = useContext(AuthContext);
 
-  const handleAuth = async (email: string, password: string, isSignup: boolean) => {
-    const url = isSignup ? '/signup/' : '/login/';
-    const method = 'POST';
-    const body = JSON.stringify({ email, password });
-    const headers = { 'Content-Type': 'application/json' };
-
+  const handleAuth = async (email: string, password: string, name: string, isSignup: boolean) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000${url}`, { method, headers, body });
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log(data.message);
-        if (!isSignup) {
-          onLoginSuccess();
-        }
+      if (isSignup) {
+        await signup(email, password, name);
+        onLoginSuccess();
       } else {
-        console.error(data.detail);
-        alert(data.detail);
+        await login(email, password);
+        onLoginSuccess();
       }
-    } catch (error) {
-      console.error('There was an error!', error);
-      alert('There was an error!');
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message);
     }
   };
   
@@ -46,9 +39,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
       
       <div className="max-w-md w-full mx-auto">
         {isLogin ? (
-          <LoginForm onToggleForm={() => setIsLogin(false)} onAuth={handleAuth} />
+          <LoginForm onToggleForm={() => setIsLogin(false)} onAuth={(email, password, isSignup) => handleAuth(email, password, "", isSignup)} />
         ) : (
-          <SignupForm onToggleForm={() => setIsLogin(true)} onAuth={handleAuth} />
+          <SignupForm onToggleForm={() => setIsLogin(true)} onAuth={(email, password, name, isSignup) => handleAuth(email, password, name, isSignup)}/>
         )}
       </div>
       
