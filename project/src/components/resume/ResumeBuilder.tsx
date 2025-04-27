@@ -9,6 +9,7 @@ const ResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
   const { resumeData, loading, exportResume, saveResume } = useResume();
   const [activeSection, setActiveSection] = useState<string>('contact');
   const [previewMode, setPreviewMode] = useState<boolean>(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false); // State for dropdown visibility
   
   // Handle section change
   const handleSectionChange = (section: string) => {
@@ -30,6 +31,7 @@ const ResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
   
   // Handle export
   const handleExport = async (format: 'pdf' | 'docx') => {
+    setIsExportDropdownOpen(false); // Close the dropdown
     try {
       await exportResume(format);
     } catch (error) {
@@ -58,30 +60,31 @@ const ResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <div className="relative group">
+          {/* Added padding to the group container */}
+          {/* Added padding to the group container */}
+          <div className="relative group py-2"> 
             <Button
               variant="primary"
               size="sm"
               icon={<Download className="h-4 w-4" />}
+              onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)} // Toggle dropdown visibility
+              disabled={!previewMode} // Disable if not in preview mode
             >
               Export
             </Button>
             
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
-              <button
-                onClick={() => handleExport('pdf')}
+            {/* Conditionally render dropdown based on state */}
+            {isExportDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                <button
+                  onClick={() => handleExport('pdf')}
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
                 Download as PDF
               </button>
-              <button
-                onClick={() => handleExport('docx')}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                Download as Word (DOCX)
-              </button>
             </div>
-          </div>
+          )}
+        </div>
           
           <Button
             variant={previewMode ? 'outline' : 'ghost'}

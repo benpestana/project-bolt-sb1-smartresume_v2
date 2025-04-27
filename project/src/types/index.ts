@@ -91,11 +91,14 @@ export interface AuthContextType {
 
 // Resume context types
 export interface ResumeContextType {
-  resumeData: ResumeData | null;
+  resumeData: ResumeData | null; // The currently selected resume
+  resumes: ResumeData[]; // The list of all resumes for the user
   loading: boolean;
-  setResumeData: (data: ResumeData | null) => void; // Allow setting null
+  setResumeData: (data: ResumeData | null) => void; // Set the selected resume
+  setResumes: (data: ResumeData[]) => void; // Set the list of resumes
   saveResume: (dataToSave: ResumeData) => Promise<void>;
-  loadResume: (id: string) => Promise<void>;
+  loadResumes: () => Promise<void>; // Load all resumes for the user
+  selectResume: (resumeId: string) => void; // Select a resume by ID
   createResume: (templateId: string) => Promise<string>;
   updateSection: <T>(sectionName: string, data: T) => void;
   exportResume: (format: 'pdf' | 'docx') => Promise<void>;

@@ -8,34 +8,31 @@ import Button from '../ui/Button';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  // Use resumeData and loading from ResumeContext
-  const { resumeData, loading, loadResume, createResume } = useResume();
+  // Use resumeData, resumes, loading, loadResumes, selectResume, and createResume from ResumeContext
+  const { resumeData, resumes, loading, loadResumes, selectResume, createResume } = useResume();
   // Determine initial view based on whether resumeData is already loaded
   const [activeView, setActiveView] = useState<'dashboard' | 'new' | 'edit'>(
     resumeData ? 'edit' : 'dashboard'
   );
 
-  // Load resume when user logs in or component mounts
+  // Load resumes when user logs in or component mounts
   useEffect(() => {
-    if (user?.email && !resumeData) { // Only load if user exists and no resumeData is loaded yet
-      loadResume();
+    if (user?.email) { // Load resumes if user exists
+      loadResumes();
     }
-  }, [user, loadResume, resumeData]); // Depend on user, loadResume, and resumeData
+  }, [user, loadResumes]); // Depend on user and loadResumes
 
   // Template selection completed - create a new resume locally and switch to edit
   const handleTemplateSelectionComplete = async (templateId: string) => {
-     // createResume is now handled in ResumeContext and sets resumeData
-     // The useEffect above will handle loading if needed, but createResume sets data directly
+     // createResume is now handled in ResumeContext and sets resumeData and adds to resumes list
      await createResume(templateId);
      setActiveView('edit'); // Switch to edit view after creating
   };
 
-  // Start editing the loaded resume
-  const handleEditResume = () => {
-    // If resumeData exists, switch to edit view
-    if (resumeData) {
-      setActiveView('edit');
-    }
+  // Start editing an existing resume
+  const handleEditResume = (resumeId: string) => {
+    selectResume(resumeId); // Select the resume by ID
+    setActiveView('edit'); // Switch to edit view
   };
 
   // Handle logout
@@ -84,32 +81,34 @@ const Dashboard: React.FC = () => {
                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
                  </div>
               ) : (
-                // Display the single loaded resume or the "no resumes" message
-                resumeData ? (
+                // Display the list of resumes or the "no resumes" message
+                resumes.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Display the single resume */}
-                    <div
-                      key={resumeData.id}
-                      className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="p-4">
-                        <h3 className="font-medium text-lg">{resumeData.contact.fullName || 'Untitled Resume'}</h3>
-                        <p className="text-sm text-gray-500">
-                          Last updated: {new Date(resumeData.lastUpdated).toLocaleDateString()}
-                        </p>
+                    {/* Display the list of resumes */}
+                    {resumes.map((resume) => (
+                      <div
+                        key={resume.id}
+                        className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="p-4">
+                          <h3 className="font-medium text-lg">{resume.contact.fullName || 'Untitled Resume'}</h3>
+                          <p className="text-sm text-gray-500">
+                            Last updated: {new Date(resume.lastUpdated).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="bg-white p-3 border-t border-gray-200">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditResume(resume.id)} // Edit this specific resume
+                            icon={<Pencil className="h-4 w-4" />}
+                            fullWidth
+                          >
+                            Edit Resume
+                          </Button>
+                        </div>
                       </div>
-                      <div className="bg-white p-3 border-t border-gray-200">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleEditResume} // Edit the loaded resume
-                          icon={<Pencil className="h-4 w-4" />}
-                          fullWidth
-                        >
-                          Edit Resume
-                        </Button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 ) : (
                   // No resumes found

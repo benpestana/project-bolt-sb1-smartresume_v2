@@ -256,14 +256,6 @@ const ResumeForm: React.FC<ResumeFormProps> = ({
               {section.name}
             </button>
           ))}
-
-          <button
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md whitespace-nowrap"
-            // onClick={() => {/* Logic to add a custom section */}}
-          >
-            <Plus className="h-5 w-5 mr-1.5" />
-            Add Section
-          </button>
         </nav>
       </div>
 

@@ -1,0 +1,26 @@
+/* Add print-specific styles here */
+
+@media print {
+  /* Hide the header */
+  header.bg-white.shadow-sm {
+    display: none;
+  }
+
+  /* Hide the form section when not in preview mode */
+  /* Assuming the form is the first child div in main when not in preview mode */
+  main > div > div:first-child {
+     display: none;
+  }
+
+  /* Ensure the preview takes full width when printing */
+  .max-w-full.animate-fade-in > .flex.flex-col.md\:flex-row > .w-full {
+      width: 100% !important;
+  }
+
+  /* Remove padding and margin from the preview container */
+  .max-w-4xl.mx-auto.py-8.px-4 {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+  }
+}
