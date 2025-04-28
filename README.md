@@ -39,6 +39,7 @@ Setup
 To run this project locally, follow these steps:
 
 --------------------------------------------------- Frontend ----------------------------------------------
+
 Install dependencies:
 (do this in terminal)
 cd project
@@ -48,6 +49,7 @@ Run frontend:
 npm run dev
 
 --------------------------------------------------- Backend ----------------------------------------------
+
 Run Backend (you might need to install dependencies)
 python -m uvicorn backend.main:app --reload
 
