@@ -1,6 +1,7 @@
 The Smart Resume Builder is an application designed to help college students create professional resumes quickly and easily. The system addresses challenges like formatting, language choices, and domain-specific requirements, providing users with a guided, user-friendly platform to create personalized resumes. 
 
 ---------------------------------------------------- Requirements Analysis ---------------------------------------------------
+
 Functional Requirements
 Template Selection: Users can choose from pre-designed templates specific to academic domains such as STEM, Business, and Humanities. Templates are customizable to fit personal preferences and career needs.
 
